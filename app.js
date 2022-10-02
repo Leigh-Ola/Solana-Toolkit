@@ -33,7 +33,7 @@ app.get('/get-nft-holder', async (req, res) => {
         res.send("An error occured");
     });
 /* owner[0].data.parsed: {
-    info: {
+    info: { 
           isNative: false,
           mint: '6gPcytnZyNvcWqJ1oUQBXS8hdEB1L3fgqidrVy388qwV', <= nft address
           owner: 'JCapwSzWyHkjuVrT5ZTyKwBHzV9oYrTNhZguAMc9PiEc', <= owner of the nft
