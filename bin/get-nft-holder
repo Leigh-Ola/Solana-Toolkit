@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+const { program } = require('commander');
+const getNftOwner = require('../lib/get-nft-owner');
+const { error, info, success, infoWithArgument } = require('../lib/helpers/log');
+
+program
+  .version('0.0.1')
+  .option('-a, --address <address>', 'token address')
+
+program.parse(process.argv);
+
+const options = program.opts();
+
+let { address } = options;
+
+if (!address) {
+  error('Usage: get-nft-holder -a address');
+  process.exit(-1)
+}
+
+async function run() {
+  info(`Getting NFT holder for ${address}`);
+  const owner = await getNftOwner([address]);
+
+  success('Success!');
+  info(`holder is ${owner}`);
+  infoWithArgument("Holder is %o", owner); 
+  //^ owner address is owner[0].data.parsed.info.owner
+  process.exit(0);
+}
+
+run();

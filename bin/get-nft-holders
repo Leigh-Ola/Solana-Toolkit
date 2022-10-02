@@ -1,0 +1,106 @@
+#!/usr/bin/env node
+require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const { size } = require('lodash');
+const { program } = require('commander');
+const cliProgress = require('cli-progress');
+const getNftOwner = require('../lib/get-nft-owner');
+
+const { error, info, success, infoWithArgument } = require('../lib/helpers/log');
+
+const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+
+program
+  .version('0.0.1')
+  .option('-i, --input <input>', 'mints json')
+  .option('-o, --output <output>', 'output json');
+
+program.parse(process.argv);
+
+const options = program.opts();
+let { input, output } = options;
+
+if (!input) {
+  error('--input or -i is required');
+  process.exit(-1);
+}
+
+const showAmount = process.env.NFT_HOLDERS_TO_SHOW;
+input = JSON.parse(fs.readFileSync(path.resolve(input)).toString()).items.slice(0, showAmount);
+let progress = 0;
+let input_size = size(input);
+bar.start(input_size > showAmount? showAmount : input_size, progress);
+
+function onProgress() {
+  bar.update(++progress);
+}
+
+info(`\n>> Getting no more than ${showAmount} nft holders`);
+
+// A function that chains promises in such a way that they execute one after the other
+const runSerial = async (tasks) => new Promise((resolve, reject) => {
+  let results = [], errs = []; // errors will be stored but unreported
+  function func(task, curr){
+    if(!task) return resolve(results);
+    task
+    .then(v=>results.push(v))
+    .catch(e=>errs.push(e))
+    .finally(() => {
+      setTimeout(() => {
+        func(tasks[++curr], curr);
+      }, 200);
+    })
+  } 
+
+  func(tasks[0], 0);
+})
+
+/** */
+runSerial(input.map(async (mint,i) => {
+  return new Promise(async (resolve, reject) => {
+    await getNftOwner([mint]).then(owner=>{
+      onProgress();
+      resolve(owner);  
+    }).catch(e=>{
+      reject(e);
+    });
+  })
+}))
+  .then((owners, errors) => {
+    // console.log("Owners: %o",owners)
+    info(`\n>> Valid items in owners: ${owners.reduce((x,y)=> {
+      return (y)? x+1 : x;
+    }, 0)} out of ${owners.length}`);
+    // console.log("Errors: %o", errors);
+    return owners.reduce((obj, owner) => {
+      if(!owner){return obj}
+      // console.log(typeof owner[0])
+      let trueOwner = owner[0].data.parsed.info;
+      let ownerAddr = trueOwner.owner;
+      if (obj[ownerAddr]) { // add to the amount
+        obj[ownerAddr].amount += Number(trueOwner.tokenAmount.amount);
+      } else { // set the initial amount
+        obj[ownerAddr] ={
+          amount : Number(trueOwner.tokenAmount.amount)
+        } 
+      }
+      return obj
+    }, {})
+  })
+  .then(owners => {
+    success('Success!')
+    owners = Object.fromEntries(Object.entries(owners).sort((a,b)=>{
+      return b[1].amount - a[1].amount
+    }))
+    if (output) {
+      fs.writeFileSync(`${output}`, JSON.stringify(owners, null, 2));
+    }
+    infoWithArgument("Owners: %o",owners);
+    process.exit(0)
+  })
+  .catch(err => {
+    error(err);
+    process.exit(-1);
+  });
+/** */

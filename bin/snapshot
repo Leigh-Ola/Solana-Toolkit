@@ -1,0 +1,77 @@
+#!/usr/bin/env node
+require('dotenv').config();
+const { program } = require('commander');
+const moment = require('moment');
+const path = require('path');
+const fs = require('fs');
+const { size } = require('lodash');
+const cliProgress = require('cli-progress');
+const { error, success, info } = require('../lib/helpers/log');
+const doSnapshot = require('../lib/do-snapshot');
+
+const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+
+program
+  .version('0.0.1')
+  .option('-i, --input <input>', './mints.json')
+  .option('-o, --output <output>', './ouput.json')
+  .option('-t, --timeout <timeout>', 'time to wait between calls')
+
+program.parse(process.argv);
+
+const options = program.opts();
+
+let { input, output, timeout } = options;
+
+if (!input) {
+  error('Input missing!');
+  error('Usage: snapshot mints.json [output.json]');
+  process.exit(-1)
+}
+
+if (!fs.existsSync(input)) {
+  error('Input json file not found');
+  error('Usage: snapshot mints.json [output.json]');
+  process.exit(-1)
+}
+
+if (timeout) {
+  timeout = parseInt(timeout, 10)
+}
+
+if (!output) {
+  output = `${moment().toISOString()}.json`;
+}
+
+if (fs.existsSync(output) && fs.lstatSync(output).isDirectory()) {
+  output = path.join(output, `${moment().toISOString()}.json`);
+}
+
+const str = fs.readFileSync(path.resolve(input)).toString();
+const addresses = JSON.parse(str);
+
+async function run() {
+  info('Taking snapshot');
+  let progress = 0;
+  bar.start(size(addresses), progress);
+
+  function onProgress(num = 1) {
+    bar.update(progress += num);
+  }
+
+  const snapshot = await doSnapshot(addresses, timeout, onProgress);
+
+  bar.stop();
+
+  fs.writeFileSync(output, JSON.stringify(snapshot, null, 2));
+
+  const filePath = path.resolve(output);
+
+  success('Snapshot taken successfully');
+  console.log('\n');
+  info(`Snapshot path: ${filePath}`);
+
+  process.exit(0);
+}
+
+run();

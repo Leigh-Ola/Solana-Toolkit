@@ -1,0 +1,43 @@
+{
+  "name": "@xindragons/toolkit",
+  "version": "1.1.4",
+  "description": "Utility lib for taking Solana NFT snapshots and running token airdrops, checking token holders etc",
+  "main": "index.js",
+  "scripts": {
+    "snapshot": "node ./bin/snapshot",
+    "airdrop": "node ./bin/airdrop",
+    "get-nft-holder": "node ./bin/get-nft-holder",
+    "get-nft-holders": "node ./bin/get-nft-holders",
+    "get-token-holders": "node ./bin/get-token-holders"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@solana/spl-token": "^0.1.8",
+    "@solana/web3.js": "^1.39.1",
+    "axios": "^0.25.0",
+    "body-parser": "^1.20.0",
+    "bottleneck": "^2.19.5",
+    "chalk": "^4.1.2",
+    "cli-progress": "^3.10.0",
+    "commander": "^8.3.0",
+    "cors": "^2.8.5",
+    "dotenv": "^14.2.0",
+    "express": "^4.18.1",
+    "glob": "^7.2.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.1",
+    "require-directory": "^2.1.1"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xin-Dragons/solana-toolkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Xin-Dragons/solana-toolkit/issues"
+  },
+  "homepage": "https://github.com/Xin-Dragons/solana-toolkit#readme"
+}
